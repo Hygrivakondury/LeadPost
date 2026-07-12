@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Get in touch</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root { --bg:#fbfcfe; --ink:#0e1726; --blue:#2b5cff; --blue-dark:#1f47cc; --line:#e4e8f0; --muted:#6b7688; --card:#fff; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--ink); font-family:"Sora",sans-serif; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; }
+  .card { width:100%; max-width:440px; background:var(--card); border:1px solid var(--line); border-radius:16px; padding:34px; box-shadow:0 8px 30px rgba(20,40,90,0.05); }
+  .eyebrow { font-size:12px; letter-spacing:0.14em; text-transform:uppercase; color:var(--blue); font-weight:600; margin-bottom:10px; }
+  h1 { font-size:26px; font-weight:700; margin-bottom:6px; letter-spacing:-0.02em; }
+  .lead { color:var(--muted); font-size:14px; margin-bottom:26px; }
+  label { display:block; font-size:13px; font-weight:600; margin:14px 0 6px; }
+  label:first-of-type { margin-top:0; }
+  input, textarea { width:100%; border:1px solid var(--line); border-radius:10px; padding:12px 13px; font-size:15px; font-family:inherit; background:var(--bg); color:var(--ink); }
+  input:focus, textarea:focus { outline:none; border-color:var(--blue); }
+  textarea { resize:vertical; min-height:80px; }
+  button { margin-top:22px; width:100%; background:var(--blue); color:#fff; border:none; border-radius:10px; padding:14px; font-size:15px; font-weight:600; cursor:pointer; font-family:inherit; }
+  button:hover { background:var(--blue-dark); }
+  button:disabled { opacity:0.6; }
+  .msg { font-size:13px; min-height:16px; margin-top:10px; }
+  .msg.err { color:#c0392b; }
+  .done { display:none; text-align:center; padding:20px 0; }
+  .done.show { display:block; }
+  .done .tick { width:52px; height:52px; border-radius:50%; background:#e8efff; color:var(--blue); display:flex; align-items:center; justify-content:center; font-size:26px; margin:0 auto 14px; }
+  .done h2 { font-size:20px; margin-bottom:6px; }
+  .done p { color:var(--muted); font-size:14px; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div id="form">
+      <div class="eyebrow">Contact</div>
+      <h1 id="headline">Let's talk</h1>
+      <p class="lead">Leave your details and we'll get back to you shortly.</p>
+      <label>Name</label>
+      <input type="text" id="name" placeholder="Jane Doe" />
+      <label>Email</label>
+      <input type="email" id="email" placeholder="jane@company.com" />
+      <label>Company <span style="color:var(--muted);font-weight:400">(optional)</span></label>
+      <input type="text" id="company" placeholder="Acme Co." />
+      <label>How can we help? <span style="color:var(--muted);font-weight:400">(optional)</span></label>
+      <textarea id="note" placeholder="Tell us a little about what you need."></textarea>
+      <button id="submit">Send</button>
+      <div class="msg" id="msg"></div>
+    </div>
+    <div class="done" id="done">
+      <div class="tick">✓</div>
+      <h2>Thanks — we've got it</h2>
+      <p>Your message is in. We'll be in touch soon.</p>
+    </div>
+  </div>
+<script>
+  fetch("/api/config").then(r=>r.json()).then(c=>{
+    if (c.projectName && c.projectName!=="our product") {
+      document.getElementById("headline").textContent = "Talk to " + c.projectName;
+      document.title = "Contact " + c.projectName;
+    }
+  }).catch(()=>{});
+  const btn = document.getElementById("submit"), msg = document.getElementById("msg");
+  btn.addEventListener("click", async () => {
+    msg.textContent=""; msg.className="msg";
+    const name=document.getElementById("name").value.trim();
+    const email=document.getElementById("email").value.trim();
+    const company=document.getElementById("company").value.trim();
+    const note=document.getElementById("note").value.trim();
+    if(!name){msg.textContent="Please enter your name.";msg.className="msg err";return;}
+    if(!email){msg.textContent="Please enter your email.";msg.className="msg err";return;}
+    btn.disabled=true; btn.textContent="Sending…";
+    try {
+      const res=await fetch("/api/lead",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name,email,company,note})});
+      const data=await res.json();
+      if(!res.ok){msg.textContent=data.error||"Something went wrong.";msg.className="msg err";btn.disabled=false;btn.textContent="Send";return;}
+      document.getElementById("form").style.display="none";
+      document.getElementById("done").classList.add("show");
+    } catch { msg.textContent="Network error. Try again."; msg.className="msg err"; btn.disabled=false; btn.textContent="Send"; }
+  });
+</script>
+</body>
+</html>
